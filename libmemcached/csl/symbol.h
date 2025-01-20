@@ -1,5 +1,5 @@
 /*  vim:expandtab:shiftwidth=2:tabstop=2:smarttab:
- * 
+ *
  *  Configure Scripting Language
  *
  *  Copyright (C) 2011 Data Differential, http://datadifferential.com/
@@ -38,13 +38,12 @@
 #ifndef __LIBMEMCACHED_CSL_SYMBOL_H__
 #define __LIBMEMCACHED_CSL_SYMBOL_H__
 
-#include <libmemcached/basic_string.h>
-#include <libmemcached/constants.h>
-#include <libmemcached/csl/server.h>
+#pragma once
 
-union YYSTYPE
-{
-  long long number;  
+#include "libmemcached/csl/common.h"
+
+union CONFIG_STYPE {
+  long long number;
   memcached_string_t string;
   memcached_string_t option;
   double double_number;
@@ -55,6 +54,6 @@ union YYSTYPE
   server_t server;
 };
 
-typedef union YYSTYPE YYSTYPE;
+typedef union CONFIG_STYPE CONFIG_STYPE;
 
 #endif /* __LIBMEMCACHED_CSL_SYMBOL_H__ */

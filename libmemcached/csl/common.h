@@ -1,5 +1,5 @@
 /*  vim:expandtab:shiftwidth=2:tabstop=2:smarttab:
- * 
+ *
  *  Configure Scripting Language
  *
  *  Copyright (C) 2011 Data Differential, http://datadifferential.com/
@@ -38,6 +38,23 @@
 #ifndef __LIBMEMCACHED_CSL_COMMON_H__
 #define __LIBMEMCACHED_CSL_COMMON_H__
 
-#include <libmemcached/common.h>
+#pragma once
 
+#define YYDEBUG 1
+
+#ifndef YY_EXTRA_TYPE
+#  define YY_EXTRA_TYPE Context *
+#endif
+
+#ifndef YY_TYPEDEF_YY_SCANNER_T
+#  define YY_TYPEDEF_YY_SCANNER_T
+typedef void *yyscan_t;
+#endif
+
+#ifndef YYSTYPE
+#  define YYSTYPE CONFIG_STYPE
+#endif
+
+#include "libmemcached/common.h"
+#include "libmemcached/csl/server.h"
 #endif /* __LIBMEMCACHED_CSL_COMMON_H__ */

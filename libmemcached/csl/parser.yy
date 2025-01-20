@@ -1,69 +1,97 @@
 /*  vim:expandtab:shiftwidth=2:tabstop=2:smarttab:
  *
- *  Configure Scripting Language
+ *  Libmemcached library
  *
- *  Copyright (C) 2011 DataDifferental, http://datadifferential.com
- *  
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Affero General Public License as
- *  published by the Free Software Foundation, either version 3 of the
- *  License, or (at your option) any later version.
- *  
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Affero General Public License for more details.
- *  
- *  You should have received a copy of the GNU Affero General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  Copyright (C) 2012 Data Differential, http://datadifferential.com/
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are
+ *  met:
+ *
+ *      * Redistributions of source code must retain the above copyright
+ *  notice, this list of conditions and the following disclaimer.
+ *
+ *      * Redistributions in binary form must reproduce the above
+ *  copyright notice, this list of conditions and the following disclaimer
+ *  in the documentation and/or other materials provided with the
+ *  distribution.
+ *
+ *      * The names of its contributors may not be used to endorse or
+ *  promote products derived from this software without specific prior
+ *  written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ *  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ *  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ *  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
  */
-
-%error-verbose
-%debug
-%defines
-%expect 0
-%output "libmemcached/csl/parser.cc"
-%defines "libmemcached/csl/parser.h"
-%lex-param { yyscan_t *scanner }
-%name-prefix="config_"
-%parse-param { Context *context }
-%parse-param { yyscan_t *scanner }
-%pure-parser
-%require "2.4"
-%start begin
-%verbose
 
 %{
 
-#include <libmemcached/csl/common.h>
-#include <libmemcached/options.hpp>
+#include "libmemcached/csl/common.h"
 
-#include <libmemcached/csl/context.h>
-#include <libmemcached/csl/symbol.h>
-#include <libmemcached/csl/scanner.h>
+class Context;
+
+%}
+
+%require "2.3"
+
+%debug
+%define parse.error verbose
+%verbose
+%expect 0
+
+%define api.pure
+%define api.prefix {config_}
+
+%lex-param { yyscan_t *scanner }
+%parse-param { class Context *context }
+%parse-param { yyscan_t *scanner }
+%start begin
+
+%{
+
+#include "libmemcached/options.hpp"
+
+#include "libmemcached/csl/context.h"
+#include "libmemcached/csl/symbol.h"
+#include "libmemcached/csl/scanner.h"
 
 #ifndef __INTEL_COMPILER
-#pragma GCC diagnostic ignored "-Wold-style-cast"
+# pragma GCC diagnostic ignored "-Wold-style-cast"
 #endif
 
-int conf_lex(YYSTYPE* lvalp, void* scanner);
+#ifndef __INTEL_COMPILER
+# ifndef __clang__
+#  pragma GCC diagnostic ignored "-Wlogical-op"
+#  pragma GCC diagnostic ignored "-Wunsafe-loop-optimizations"
+# endif
+#endif
 
-#define select_yychar(__context) yychar == UNKNOWN ? ( (__context)->previous_token == END ? UNKNOWN : (__context)->previous_token ) : yychar   
+#define select_yychar(__context) yychar == UNKNOWN ? ( (__context)->previous_token == END ? UNKNOWN : (__context)->previous_token ) : yychar
 
 #define stryytname(__yytokentype) ((__yytokentype) <  YYNTOKENS ) ? yytname[(__yytokentype)] : ""
 
-#define parser_abort(__context, __error_message) do { (__context)->abort((__error_message), yytokentype(select_yychar(__context)), stryytname(YYTRANSLATE(select_yychar(__context)))); YYABORT; } while (0) 
+#define parser_abort(__context, __error_message) do { (__context)->abort((__error_message), config_tokentype(select_yychar(__context)), stryytname(YYTRANSLATE(select_yychar(__context)))); YYABORT; } while (0)
 
 // This is bison calling error.
 inline void __config_error(Context *context, yyscan_t *scanner, const char *error, int last_token, const char *last_token_str)
 {
   if (not context->end())
   {
-    context->error(error, yytokentype(last_token), last_token_str);
+    context->error(error, config_tokentype(last_token), last_token_str);
   }
   else
   {
-    context->error(error, yytokentype(last_token), last_token_str);
+    context->error(error, config_tokentype(last_token), last_token_str);
   }
 }
 
@@ -74,14 +102,14 @@ inline void __config_error(Context *context, yyscan_t *scanner, const char *erro
 
 %token COMMENT
 %token END
-%token ERROR
+%token CSL_ERROR
 %token RESET
 %token PARSER_DEBUG
 %token INCLUDE
 %token CONFIGURE_FILE
 %token EMPTY_LINE
 %token SERVER
-%token SOCKET
+%token CSL_SOCKET
 %token SERVERS
 %token SERVERS_OPTION
 %token UNKNOWN_OPTION
@@ -117,6 +145,7 @@ inline void __config_error(Context *context, yyscan_t *scanner, const char *erro
 %token _TCP_KEEPALIVE
 %token _TCP_KEEPIDLE
 %token _TCP_NODELAY
+%token FETCH_VERSION
 
 /* Callbacks */
 %token NAMESPACE
@@ -142,13 +171,13 @@ inline void __config_error(Context *context, yyscan_t *scanner, const char *erro
 %token RANDOM
 
 /* Boolean values */
-%token <boolean> TRUE
-%token <boolean> FALSE
+%token <boolean> CSL_TRUE
+%token <boolean> CSL_FALSE
 
 %nonassoc ','
 %nonassoc '='
 
-%token <number> FLOAT
+%token <number> CSL_FLOAT
 %token <number> NUMBER
 %token <number> PORT
 %token <number> WEIGHT_START
@@ -185,10 +214,10 @@ statement:
             context->set_end();
             YYACCEPT;
           }
-        | ERROR
+        | CSL_ERROR
           {
             context->rc= MEMCACHED_PARSE_USER_ERROR;
-            parser_abort(context, NULL);
+            parser_abort(context, "ERROR called directly");
           }
         | RESET
           {
@@ -202,7 +231,7 @@ statement:
           {
             if ((context->rc= memcached_parse_configure_file(*context->memc, $3.c_str, $3.size)) != MEMCACHED_SUCCESS)
             {
-              parser_abort(context, NULL);
+              parser_abort(context, "Failed to parse configuration file");
             }
           }
         ;
@@ -211,25 +240,31 @@ statement:
 expression:
           SERVER HOSTNAME optional_port optional_weight
           {
-            if (memcached_failed(context->rc= memcached_server_add_with_weight(context->memc, $2.c_str, $3, $4)))
+            if (memcached_failed(context->rc= memcached_server_add_with_weight(context->memc, $2.c_str, $3, uint32_t($4))))
             {
-              parser_abort(context, NULL);
+              char buffer[1024];
+              snprintf(buffer, sizeof(buffer), "Failed to add server: %s:%u", $2.c_str, uint32_t($3));
+              parser_abort(context, buffer);
             }
             context->unset_server();
           }
         | SERVER IPADDRESS optional_port optional_weight
           {
-            if (memcached_failed(context->rc= memcached_server_add_with_weight(context->memc, $2.c_str, $3, $4)))
+            if (memcached_failed(context->rc= memcached_server_add_with_weight(context->memc, $2.c_str, $3, uint32_t($4))))
             {
-              parser_abort(context, NULL);
+              char buffer[1024];
+              snprintf(buffer, sizeof(buffer), "Failed to add server: %s:%u", $2.c_str, uint32_t($3));
+              parser_abort(context, buffer);
             }
             context->unset_server();
           }
-        | SOCKET string optional_weight
+        | CSL_SOCKET string optional_weight
           {
-            if (memcached_failed(context->rc= memcached_server_add_unix_socket_with_weight(context->memc, $2.c_str, $3)))
+            if (memcached_failed(context->rc= memcached_server_add_unix_socket_with_weight(context->memc, $2.c_str, uint32_t($3))))
             {
-              parser_abort(context, NULL);
+              char buffer[1024];
+              snprintf(buffer, sizeof(buffer), "Failed to add socket: %s", $2.c_str);
+              parser_abort(context, buffer);
             }
           }
         | CONFIGURE_FILE string
@@ -238,11 +273,11 @@ expression:
           }
         | POOL_MIN NUMBER
           {
-            context->memc->configure.initial_pool_size= $2;
+            context->memc->configure.initial_pool_size= uint32_t($2);
           }
         | POOL_MAX NUMBER
           {
-            context->memc->configure.max_pool_size= $2;
+            context->memc->configure.max_pool_size= uint32_t($2);
           }
         | behaviors
         ;
@@ -250,48 +285,63 @@ expression:
 behaviors:
           NAMESPACE string
           {
+            if (memcached_callback_get(context->memc, MEMCACHED_CALLBACK_PREFIX_KEY, NULL))
+            {
+              parser_abort(context, "--NAMESPACE can only be called once");
+            }
+
             if ((context->rc= memcached_set_namespace(context->memc, $2.c_str, $2.size)) != MEMCACHED_SUCCESS)
             {
-              parser_abort(context, NULL);;
+              parser_abort(context, memcached_last_error_message(context->memc));
             }
           }
         | DISTRIBUTION distribution
           {
+            // Check to see if DISTRIBUTION has already been set
             if ((context->rc= memcached_behavior_set(context->memc, MEMCACHED_BEHAVIOR_DISTRIBUTION, $2)) != MEMCACHED_SUCCESS)
             {
-              parser_abort(context, NULL);;
+              parser_abort(context, "--DISTRIBUTION can only be called once");
+            }
+
+            if ((context->rc= memcached_behavior_set(context->memc, MEMCACHED_BEHAVIOR_DISTRIBUTION, $2)) != MEMCACHED_SUCCESS)
+            {
+              parser_abort(context, memcached_last_error_message(context->memc));;
             }
           }
         | DISTRIBUTION distribution ',' hash
           {
+            // Check to see if DISTRIBUTION has already been set
             if ((context->rc= memcached_behavior_set(context->memc, MEMCACHED_BEHAVIOR_DISTRIBUTION, $2)) != MEMCACHED_SUCCESS)
             {
-              parser_abort(context, NULL);;
+              parser_abort(context, "--DISTRIBUTION can only be called once");
             }
+
             if ((context->rc= memcached_behavior_set_distribution_hash(context->memc, $4)) != MEMCACHED_SUCCESS)
             {
-              parser_abort(context, NULL);;
+              parser_abort(context, "Unable to set the hash for the DISTRIBUTION requested");
             }
           }
         | HASH hash
           {
             if ((context->rc= memcached_behavior_set(context->memc, MEMCACHED_BEHAVIOR_HASH, $2)) != MEMCACHED_SUCCESS)
             {
-              parser_abort(context, NULL);; 
+              parser_abort(context, NULL);;
             }
           }
         | behavior_number NUMBER
           {
             if ((context->rc= memcached_behavior_set(context->memc, $1, $2)) != MEMCACHED_SUCCESS)
             {
-              parser_abort(context, NULL);;
+              parser_abort(context, "Unable to set behavior");
             }
           }
         | behavior_boolean
           {
             if ((context->rc= memcached_behavior_set(context->memc, $1, true)) != MEMCACHED_SUCCESS)
             {
-              parser_abort(context, NULL);;
+              char buffer[1024];
+              snprintf(buffer, sizeof(buffer), "Could not set: %s", libmemcached_string_behavior($1));
+              parser_abort(context, buffer);
             }
           }
         |  USER_DATA
@@ -350,7 +400,7 @@ behavior_number:
           }
         ;
 
-behavior_boolean: 
+behavior_boolean:
           BINARY_PROTOCOL
           {
             $$= MEMCACHED_BEHAVIOR_BINARY_PROTOCOL;
@@ -478,10 +528,9 @@ distribution:
           }
         ;
 
-%% 
+%%
 
-void Context::start() 
+void Context::start()
 {
   config_parse(this, (void **)scanner);
 }
-

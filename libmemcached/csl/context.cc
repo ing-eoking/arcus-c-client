@@ -1,5 +1,5 @@
 /*  vim:expandtab:shiftwidth=2:tabstop=2:smarttab:
- * 
+ *
  *  Configure Scripting Language
  *
  *  Copyright (C) 2011 Data Differential, http://datadifferential.com/
@@ -38,7 +38,7 @@
 #include <libmemcached/csl/common.h>
 #include <libmemcached/csl/context.h>
 
-void Context::abort(const char *error_arg, yytokentype last_token, const char *last_token_str)
+void Context::abort(const char *error_arg, config_tokentype last_token, const char *last_token_str)
 {
   rc= MEMCACHED_PARSE_ERROR;
   (void)last_token;
@@ -53,7 +53,7 @@ void Context::abort(const char *error_arg, yytokentype last_token, const char *l
   memcached_set_parser_error(*memc, MEMCACHED_AT, "Error occurred while parsing: %s", memcached_strerror(NULL, MEMCACHED_PARSE_ERROR));
 }
 
-void Context::error(const char *error_arg, yytokentype last_token, const char *last_token_str)
+void Context::error(const char *error_arg, config_tokentype last_token, const char *last_token_str)
 {
   rc= MEMCACHED_PARSE_ERROR;
   if (not error_arg)
@@ -69,7 +69,7 @@ void Context::error(const char *error_arg, yytokentype last_token, const char *l
   }
 
   // We now test if it is something other then a syntax error, if it  we
-  // return a generic message 
+  // return a generic message
   if (error_arg and strcmp(error_arg, "syntax error") == 0)
   { }
   else if (error_arg)

@@ -1,47 +1,70 @@
 /*  vim:expandtab:shiftwidth=2:tabstop=2:smarttab:
  *
- *  Configure Scripting Language
+ *  Libmemcached library
  *
- *  Copyright (C) 2011 DataDifferental, http://datadifferential.com
- * 
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Affero General Public License as
- *  published by the Free Software Foundation, either version 3 of the
- *  License, or (at your option) any later version.
- * 
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Affero General Public License for more details.
- * 
- *  You should have received a copy of the GNU Affero General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *  Copyright (C) 2012 Data Differential, http://datadifferential.com/
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are
+ *  met:
+ *
+ *      * Redistributions of source code must retain the above copyright
+ *  notice, this list of conditions and the following disclaimer.
+ *
+ *      * Redistributions in binary form must reproduce the above
+ *  copyright notice, this list of conditions and the following disclaimer
+ *  in the documentation and/or other materials provided with the
+ *  distribution.
+ *
+ *      * The names of its contributors may not be used to endorse or
+ *  promote products derived from this software without specific prior
+ *  written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ *  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ *  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ *  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
  */
+
 
 %top{
 
-#include <libmemcached/csl/common.h>
-#include <libmemcached/csl/context.h>
-#include <libmemcached/csl/parser.h>
-#include <libmemcached/csl/symbol.h>
+#include "libmemcached/csl/common.h"
+#include "libmemcached/csl/context.h"
+#include "libmemcached/csl/parser.h"
+#include "libmemcached/csl/symbol.h"
 
 #ifndef __INTEL_COMPILER
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #pragma GCC diagnostic ignored "-Wsign-compare"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wmissing-declarations"
+#pragma GCC diagnostic ignored "-Wunused-result"
+#pragma GCC diagnostic ignored "-Wmissing-noreturn"
 #endif
 
-#define YY_NO_INPUT
+#ifdef __clang__
+#pragma GCC diagnostic ignored "-Wshorten-64-to-32"
+#endif
 
-#define YY_EXTRA_TYPE Context*
+#ifndef __INTEL_COMPILER
+#ifndef __clang__
+#pragma GCC diagnostic ignored "-Wlogical-op"
+#endif
+#endif
 
 }
 
 
 %{
-#include <cstdlib>
-#include <cstring>
-
 #define PARAM yyget_extra(yyscanner)
 
 #define get_lex_chars(buffer, result, max_size, context) \
@@ -59,18 +82,27 @@
   } \
 }
 
+#define YY_FATAL_ERROR(msg) \
+{\
+    fprintf(stderr, "%s\n", msg); \
+}
+
+#define YYSTYPE CONFIG_STYPE
 
 #define YY_INPUT(buffer, result, max_size) get_lex_chars(buffer, result, max_size, PARAM)
 
 %}
 
+%option nostdinit
 %option 8bit
+%option warn
 %option bison-bridge
+%option never-interactive
 %option case-insensitive
-%option debug
+%option nodefault
+%option noinput
 %option nounput
 %option noyywrap
-%option outfile="libmemcached/csl/scanner.cc" header-file="libmemcached/csl/scanner.h"
 %option perf-report
 %option prefix="config_"
 %option reentrant
@@ -95,7 +127,7 @@
 
 "--SERVER="                          { yyextra->begin= yytext; yyextra->set_server(); return yyextra->previous_token= SERVER; }
 
-"--SOCKET="                          { yyextra->begin= yytext; return yyextra->previous_token= SOCKET; }
+"--SOCKET="                          { yyextra->begin= yytext; return yyextra->previous_token= CSL_SOCKET; }
 
 "--BINARY-PROTOCOL"			{ yyextra->begin= yytext; return yyextra->previous_token= BINARY_PROTOCOL; }
 "--BUFFER-REQUESTS"			{ yyextra->begin= yytext; return yyextra->previous_token= BUFFER_REQUESTS; }
@@ -136,10 +168,10 @@ RESET           { yyextra->begin= yytext; return yyextra->previous_token= RESET;
 DEBUG           { yyextra->begin= yytext; return yyextra->previous_token= PARSER_DEBUG; }
 SERVERS           { yyextra->begin= yytext; return yyextra->previous_token= SERVERS; }
 END           { yyextra->begin= yytext; return yyextra->previous_token= END; }
-ERROR           { yyextra->begin= yytext; return yyextra->previous_token= ERROR; }
+CSL_ERROR           { yyextra->begin= yytext; return yyextra->previous_token= CSL_ERROR; }
 
-TRUE           { return yyextra->previous_token= TRUE; }
-FALSE           { return yyextra->previous_token= FALSE; }
+TRUE           { return yyextra->previous_token= CSL_TRUE; }
+FALSE           { return yyextra->previous_token= CSL_FALSE; }
 
 
 "--"[[:alnum:]]*   {
@@ -210,6 +242,6 @@ void Context::init_scanner()
 
 void Context::destroy_scanner()
 {
+  (void)yy_fatal_error; // Removes warning about unused yy_fatal_error()
   yylex_destroy(scanner);
 }
-
