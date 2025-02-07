@@ -2143,11 +2143,11 @@ static memcached_return_t textual_coll_smget_missed_key_fetch(memcached_server_w
 
   for (size_t i=0; i<kcount; i++)
   {
-    char to_read_string[MEMCACHED_MAX_KEY+2]; // +2: "\r\n"
+    char to_read_string[MEMCACHED_MAX_KEY+3]; // +2: "\r\n"
     ssize_t read_length= 0;
 
     /* <missed key> */
-    rrc= fetch_value_header(ptr, to_read_string, &read_length, MEMCACHED_MAX_KEY+1);
+    rrc= fetch_value_header(ptr, to_read_string, &read_length, MEMCACHED_MAX_KEY+2);
     if (rrc != MEMCACHED_SUCCESS && rrc != MEMCACHED_END)
     {
       return rrc;
@@ -2172,7 +2172,7 @@ static memcached_return_t textual_coll_smget_missed_key_fetch(memcached_server_w
     {
       /* <missed cause> */
       /* MEMCACHED_MAX_KEY is enough length for reading cause string */
-      rrc= fetch_value_header(ptr, to_read_string, &read_length, MEMCACHED_MAX_KEY+1);
+      rrc= fetch_value_header(ptr, to_read_string, &read_length, MEMCACHED_MAX_KEY+2);
       if (rrc != MEMCACHED_END)
       {
         memcached_string_free(&result->missed_keys[i]);
@@ -2244,11 +2244,11 @@ static memcached_return_t textual_coll_smget_trimmed_key_fetch(memcached_server_
 
   for (size_t i=0; i<kcount; i++)
   {
-    char to_read_string[MEMCACHED_MAX_KEY+2]; // +2: "\r\n"
+    char to_read_string[MEMCACHED_MAX_KEY+3]; // +2: "\r\n"
     ssize_t read_length= 0;
 
     /* <trimmed key> */
-    rrc= fetch_value_header(ptr, to_read_string, &read_length, MEMCACHED_MAX_KEY+1);
+    rrc= fetch_value_header(ptr, to_read_string, &read_length, MEMCACHED_MAX_KEY+2);
     if (rrc != MEMCACHED_SUCCESS)
     {
       if (rrc == MEMCACHED_END) /* "\r\n" is found */
