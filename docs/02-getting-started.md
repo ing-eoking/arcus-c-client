@@ -1,17 +1,4 @@
-# ARCUS C Client
-
-ARCUS client는 ARCUS admin과 ARCUS cache server군 들과의 연결을 유지하며 client로 들어온 명령을 처리하여 그 결과를 반환한다
-
-ARCUS C client는 C/C++ 개발환경에서 ARCUS를 사용하기 위한 라이브러리로서,
-대표적인 memcached C client인 [libmemcached](https://code.launchpad.net/libmemcached)를 기반으로 개발하였다.
-따라서 libmemcached의 기능을 대부분 사용할 수 있으며,
-ARCUS cache server에서 제공하는 failover 기능과 collection 기능 등을 추가로 지원한다.
-
-지원되는 추가 기능은 다음과 같다.
-
-* Cache Cluster-awareness: ARCUS admin 서버에 연결하여 자신이 사용하는 캐시 서버 클러스터의 변경사항을 자동으로 인식한다.
-* Collection APIs: ARCUS cache server에서 지원하는 List, Set, B+tree 형태의 자료구조를 사용할 수 있다.
-* Prefix: 특정 prefix를 가지는 모든 item을 삭제할 수 있다.
+# Getting Started
 
 아래의 순서로 ARCUS C Client 사용법을 설명한다.
 
@@ -48,10 +35,8 @@ ARCUS cache server에서 제공하는 failover 기능과 collection 기능 등�
                                      memcached_pool_st *pool, memcached_st *proxy)
   ```
 
-  `arcus_proxy_create` 함수는
-  멀티 프로세스 서버의 부모 프로세스가 ARCUS에 연결한 뒤, 자식 프로세스들이 사용할 proxy를 생성하기 위해 사용한다.
-  `arcus_proxy_connect` 함수는
-  멀티 프로세스 서버의 자식 프로세스에서 부모 프로세스가 생성한 proxy에 연결하기 위해 사용한다.
+  `arcus_proxy_create` 함수는 멀티 프로세스 서버의 부모 프로세스가 ARCUS에 연결한 뒤, 자식 프로세스들이 사용할 proxy를 생성하기 위해 사용한다.
+  `arcus_proxy_connect` 함수는 멀티 프로세스 서버의 자식 프로세스에서 부모 프로세스가 생성한 proxy에 연결하기 위해 사용한다.
   참고 사항으로, 멀티 프로세스 서버이지만 각 자식 프로세스가 멀티 쓰레드로 동작하는 경우에는
   pool을 생성하여 사용할 수 있다.
 
